@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Tracker</title>
+    <style>
+        :root {
+            --primary: #ff6b6b;
+            --secondary: #4ecdc4;
+            --accent: #ffe66d;
+            --dark: #2d3436;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: var(--dark);
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 2rem 0;
+            font-size: 3rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .spotlight-section {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .spotlight-title {
+            color: white;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        .spotlight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .spotlight-card {
+            background: rgba(255,255,255,0.9);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            transform: rotateZ(-1deg);
+            transition: all 0.3s ease;
+        }
+
+        .spotlight-card:hover {
+            transform: rotateZ(1deg) scale(1.05);
+        }
+
+        /* Previous styles remain, add these new styles */
+        .anime-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .anime-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s;
+        }
+
+        .anime-card:hover::before {
+            animation: shine 1.5s;
+        }
+
+        @keyframes shine {
+            0% { left: -50%; }
+            100% { left: 150%; }
+        }
+
+        .favorite-star {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #ffd700;
+            filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
+        }
+
+        /* Rest of previous styles remain */
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="filterAnime('all')">All Anime</button>
+            <button class="nav-btn" onclick="filterAnime('watched')">Watched</button>
+            <button class="nav-btn" onclick="filterAnime('unwatched')">Watchlist</button>
+            <button class="nav-btn" onclick="filterAnime('favorite')">Favorites</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>✨ Anime Tracker ✨</h1>
+
+        <div class="spotlight-section">
+            <h2 class="spotlight-title">🌟 Top Picks Spotlight</h2>
+            <div class="spotlight-grid" id="spotlightGrid"></div>
+        </div>
+
+        <!-- Keep previous input section and lists -->
+        
+    </div>
+
+    <script>
+        // Add to anime object: favorite: false
+        function toggleFavorite(id) {
+            animeList = animeList.map(anime => {
+                if (anime.id === id) {
+                    anime.favorite = !anime.favorite;
+                }
+                return anime;
+            });
+            saveData();
+            renderLists();
+            updateSpotlight();
+        }
+
+        function filterAnime(filter) {
+            currentFilter = filter;
+            renderLists();
+        }
+
+        function updateSpotlight() {
+            const spotlightGrid = document.getElementById('spotlightGrid');
+            const favorites = animeList.filter(anime => anime.favorite);
+            
+            spotlightGrid.innerHTML = favorites.map(anime => `
+                <div class="spotlight-card">
+                    <h3>${anime.name}</h3>
+                    <div class="rating">${'★'.repeat(anime.rating)}</div>
+                    <p class="notes">${anime.notes || 'No notes'}</p>
+                </div>
+            `).join('');
+        }
+
+        // Modify anime card HTML to include:
+        // <div class="favorite-star" onclick="toggleFavorite(${anime.id})">${anime.favorite ? '★' : '☆'}</div>
+
+        // Add currentFilter variable and modify renderLists to filter
+        let currentFilter = 'all';
+
+        function renderLists() {
+            // Modify filteredList based on currentFilter
+            let filteredList = animeList;
+            if (currentFilter === 'watched') filteredList = animeList.filter(a => a.watched);
+            if (currentFilter === 'unwatched') filteredList = animeList.filter(a => !a.watched);
+            if (currentFilter === 'favorite') filteredList = animeList.filter(a => a.favorite);
+
+            // Update rendering logic
+        }
+
+        // Initialize spotlight on load
+        updateSpotlight();
+    </script>
+</body>
+</html>
