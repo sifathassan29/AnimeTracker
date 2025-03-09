@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Tracker</title>
+    <title>Anime Tracker Pro</title>
     <style>
         :root {
             --primary: #ff6b6b;
@@ -36,6 +36,7 @@
             display: flex;
             gap: 1rem;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .nav-btn {
@@ -45,6 +46,7 @@
             border-radius: 25px;
             cursor: pointer;
             transition: transform 0.3s ease;
+            border: none;
         }
 
         .nav-btn:hover {
@@ -101,8 +103,60 @@
             transform: rotateZ(1deg) scale(1.05);
         }
 
-        /* Previous styles remain, add these new styles */
+        .input-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--secondary);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        button.action-btn {
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button.action-btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        .lists {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .anime-list {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
         .anime-card {
+            border: 2px solid var(--secondary);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 10px;
             position: relative;
             overflow: hidden;
             transition: all 0.3s ease;
@@ -129,6 +183,28 @@
             100% { left: 150%; }
         }
 
+        .watched { background: #e8f5e9; }
+        .unwatched { background: #fff3e0; }
+
+        .rating {
+            color: var(--primary);
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+
+        .notes {
+            color: var(--dark);
+            font-size: 0.95rem;
+        }
+
+        .actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
         .favorite-star {
             position: absolute;
             top: 10px;
@@ -138,8 +214,6 @@
             color: #ffd700;
             filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
         }
-
-        /* Rest of previous styles remain */
     </style>
 </head>
 <body>
@@ -160,19 +234,99 @@
             <div class="spotlight-grid" id="spotlightGrid"></div>
         </div>
 
-        <!-- Keep previous input section and lists -->
-        
+        <div class="input-section">
+            <h2>Add New Anime</h2>
+            <div class="input-group">
+                <input type="text" id="animeName" placeholder="Anime name">
+            </div>
+            <div class="input-group">
+                <select id="animeRating">
+                    <option value="">Select Rating</option>
+                    <option value="10">10 ★</option>
+                    <option value="9">9 ★</option>
+                    <option value="8">8 ★</option>
+                    <option value="7">7 ★</option>
+                    <option value="6">6 ★</option>
+                    <option value="5">5 ★</option>
+                    <option value="4">4 ★</option>
+                    <option value="3">3 ★</option>
+                    <option value="2">2 ★</option>
+                    <option value="1">1 ★</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <textarea id="animeNotes" placeholder="Add notes..."></textarea>
+            </div>
+            <button class="action-btn" onclick="addAnime()">Add Anime</button>
+        </div>
+
+        <div class="lists">
+            <div class="anime-list">
+                <h2>Watchlist</h2>
+                <div id="unwatchedList"></div>
+            </div>
+            <div class="anime-list">
+                <h2>Watched</h2>
+                <div id="watchedList"></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Add to anime object: favorite: false
-        function toggleFavorite(id) {
+        let animeList = JSON.parse(localStorage.getItem('animeList')) || [];
+        let currentFilter = 'all';
+
+        function saveData() {
+            localStorage.setItem('animeList', JSON.stringify(animeList));
+        }
+
+        function addAnime() {
+            const name = document.getElementById('animeName').value;
+            const rating = document.getElementById('animeRating').value;
+            const notes = document.getElementById('animeNotes').value;
+
+            if (!name) {
+                alert('Please enter anime name');
+                return;
+            }
+
+            const newAnime = {
+                id: Date.now(),
+                name: name,
+                rating: rating || 'Not rated',
+                notes: notes,
+                watched: false,
+                favorite: false
+            };
+
+            animeList.push(newAnime);
+            saveData();
+            renderLists();
+            clearInputs();
+            updateSpotlight();
+        }
+
+        function toggleWatched(id) {
             animeList = animeList.map(anime => {
-                if (anime.id === id) {
-                    anime.favorite = !anime.favorite;
-                }
+                if (anime.id === id) anime.watched = !anime.watched;
                 return anime;
             });
+            saveData();
+            renderLists();
+        }
+
+        function toggleFavorite(id) {
+            animeList = animeList.map(anime => {
+                if (anime.id === id) anime.favorite = !anime.favorite;
+                return anime;
+            });
+            saveData();
+            renderLists();
+            updateSpotlight();
+        }
+
+        function deleteAnime(id) {
+            animeList = animeList.filter(anime => anime.id !== id);
             saveData();
             renderLists();
             updateSpotlight();
@@ -196,23 +350,48 @@
             `).join('');
         }
 
-        // Modify anime card HTML to include:
-        // <div class="favorite-star" onclick="toggleFavorite(${anime.id})">${anime.favorite ? '★' : '☆'}</div>
-
-        // Add currentFilter variable and modify renderLists to filter
-        let currentFilter = 'all';
-
         function renderLists() {
-            // Modify filteredList based on currentFilter
+            const watchedList = document.getElementById('watchedList');
+            const unwatchedList = document.getElementById('unwatchedList');
             let filteredList = animeList;
+
             if (currentFilter === 'watched') filteredList = animeList.filter(a => a.watched);
             if (currentFilter === 'unwatched') filteredList = animeList.filter(a => !a.watched);
             if (currentFilter === 'favorite') filteredList = animeList.filter(a => a.favorite);
 
-            // Update rendering logic
+            watchedList.innerHTML = '';
+            unwatchedList.innerHTML = '';
+
+            filteredList.forEach(anime => {
+                const card = document.createElement('div');
+                card.className = `anime-card ${anime.watched ? 'watched' : 'unwatched'}`;
+                card.innerHTML = `
+                    <div class="favorite-star" onclick="toggleFavorite(${anime.id})">
+                        ${anime.favorite ? '★' : '☆'}
+                    </div>
+                    <h3>${anime.name}</h3>
+                    ${anime.rating ? `<div class="rating">Rating: ${'★'.repeat(anime.rating)}</div>` : ''}
+                    ${anime.notes ? `<div class="notes">${anime.notes}</div>` : ''}
+                    <div class="actions">
+                        <button class="action-btn" onclick="toggleWatched(${anime.id})">
+                            ${anime.watched ? 'Mark Unwatched' : 'Mark Watched'}
+                        </button>
+                        <button class="action-btn" onclick="deleteAnime(${anime.id})">Delete</button>
+                    </div>
+                `;
+
+                (anime.watched ? watchedList : unwatchedList).appendChild(card);
+            });
         }
 
-        // Initialize spotlight on load
+        function clearInputs() {
+            document.getElementById('animeName').value = '';
+            document.getElementById('animeRating').value = '';
+            document.getElementById('animeNotes').value = '';
+        }
+
+        // Initial setup
+        renderLists();
         updateSpotlight();
     </script>
 </body>
