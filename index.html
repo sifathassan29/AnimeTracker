@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Tracker Pro</title>
+    <title>Anime Tracker</title>
     <style>
         :root {
             --primary: #ff6b6b;
@@ -97,6 +97,7 @@
             text-align: center;
             transform: rotateZ(-1deg);
             transition: all 0.3s ease;
+            overflow: hidden;
         }
 
         .spotlight-card:hover {
@@ -214,6 +215,45 @@
             color: #ffd700;
             filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
         }
+
+        .poster-upload {
+            margin: 1rem 0;
+        }
+
+        .poster-preview {
+            max-width: 200px;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .anime-poster {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .anime-poster:hover {
+            transform: scale(1.05);
+        }
+
+        .remove-poster {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
@@ -238,6 +278,10 @@
             <h2>Add New Anime</h2>
             <div class="input-group">
                 <input type="text" id="animeName" placeholder="Anime name">
+            </div>
+            <div class="input-group">
+                <input type="file" id="animePoster" accept="image/*">
+                <img id="posterPreview" class="poster-preview" style="display: none;">
             </div>
             <div class="input-group">
                 <select id="animeRating">
@@ -276,6 +320,19 @@
         let animeList = JSON.parse(localStorage.getItem('animeList')) || [];
         let currentFilter = 'all';
 
+        // Image upload handler
+        document.getElementById('animePoster').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('posterPreview').src = e.target.result;
+                    document.getElementById('posterPreview').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
         function saveData() {
             localStorage.setItem('animeList', JSON.stringify(animeList));
         }
@@ -284,26 +341,38 @@
             const name = document.getElementById('animeName').value;
             const rating = document.getElementById('animeRating').value;
             const notes = document.getElementById('animeNotes').value;
+            const posterFile = document.getElementById('animePoster').files[0];
 
             if (!name) {
                 alert('Please enter anime name');
                 return;
             }
 
-            const newAnime = {
-                id: Date.now(),
-                name: name,
-                rating: rating || 'Not rated',
-                notes: notes,
-                watched: false,
-                favorite: false
-            };
+            const processPoster = (callback) => {
+                if (!posterFile) return callback(null);
+                
+                const reader = new FileReader();
+                reader.onload = (e) => callback(e.target.result);
+                reader.readAsDataURL(posterFile);
+            }
 
-            animeList.push(newAnime);
-            saveData();
-            renderLists();
-            clearInputs();
-            updateSpotlight();
+            processPoster((posterData) => {
+                const newAnime = {
+                    id: Date.now(),
+                    name: name,
+                    rating: rating || 'Not rated',
+                    notes: notes,
+                    poster: posterData,
+                    watched: false,
+                    favorite: false
+                };
+
+                animeList.push(newAnime);
+                saveData();
+                renderLists();
+                clearInputs();
+                updateSpotlight();
+            });
         }
 
         function toggleWatched(id) {
@@ -332,6 +401,15 @@
             updateSpotlight();
         }
 
+        function removePoster(id) {
+            animeList = animeList.map(anime => {
+                if (anime.id === id) anime.poster = null;
+                return anime;
+            });
+            saveData();
+            renderLists();
+        }
+
         function filterAnime(filter) {
             currentFilter = filter;
             renderLists();
@@ -343,6 +421,7 @@
             
             spotlightGrid.innerHTML = favorites.map(anime => `
                 <div class="spotlight-card">
+                    ${anime.poster ? `<img src="${anime.poster}" class="anime-poster" alt="${anime.name} Poster">` : ''}
                     <h3>${anime.name}</h3>
                     <div class="rating">${'★'.repeat(anime.rating)}</div>
                     <p class="notes">${anime.notes || 'No notes'}</p>
@@ -366,6 +445,12 @@
                 const card = document.createElement('div');
                 card.className = `anime-card ${anime.watched ? 'watched' : 'unwatched'}`;
                 card.innerHTML = `
+                    ${anime.poster ? `
+                        <div class="poster-container" style="position: relative;">
+                            <img src="${anime.poster}" class="anime-poster" alt="${anime.name} Poster">
+                            <button class="remove-poster" onclick="removePoster(${anime.id})">×</button>
+                        </div>
+                    ` : ''}
                     <div class="favorite-star" onclick="toggleFavorite(${anime.id})">
                         ${anime.favorite ? '★' : '☆'}
                     </div>
@@ -388,6 +473,8 @@
             document.getElementById('animeName').value = '';
             document.getElementById('animeRating').value = '';
             document.getElementById('animeNotes').value = '';
+            document.getElementById('animePoster').value = '';
+            document.getElementById('posterPreview').style.display = 'none';
         }
 
         // Initial setup
